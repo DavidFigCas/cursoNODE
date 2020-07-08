@@ -27,8 +27,8 @@
 
 // Update these with values suitable for your network.
 
-const char* ssid = "Inventoteca_2G";
-const char* password = "science_7425";
+const char* ssid = "INFINITUM2522_5";
+const char* password = "y75Ttb7Af7";
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
