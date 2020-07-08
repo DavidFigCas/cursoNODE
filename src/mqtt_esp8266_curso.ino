@@ -20,6 +20,10 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include "DHT.h"
+
+#define DHTPIN 2
+#define DHTTYPE DHT11   // DHT 11
 
 // Update these with values suitable for your network.
 
@@ -34,7 +38,13 @@ unsigned long lastMsg = 0;
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 
-void setup_wifi() {
+// Creo el objeto DHT para el sensor de temperatura
+DHT dht(DHTPIN, DHTTYPE);
+
+
+// ------------------------------------------------ setup_wifi
+void setup_wifi()
+{
 
   delay(10);
   // We start by connecting to a WiFi network
@@ -58,7 +68,9 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+// ------------------------------------------------ callback
+void callback(char* topic, byte* payload, unsigned int length)
+{
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -78,7 +90,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
-void reconnect() {
+// ------------------------------------------------ reconnect
+void reconnect()
+{
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
@@ -102,7 +116,9 @@ void reconnect() {
   }
 }
 
-void setup() {
+// ------------------------------------------------ setup
+void setup()
+{
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
@@ -110,7 +126,9 @@ void setup() {
   client.setCallback(callback);
 }
 
-void loop() {
+// ------------------------------------------------ loop
+void loop()
+{
 
   if (!client.connected()) {
     reconnect();
@@ -118,12 +136,24 @@ void loop() {
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 2000) {
-    lastMsg = now;
-    ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
-    Serial.print("Publish message: ");
-    Serial.println(msg);
-    client.publish("outTopic", msg);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  float f = dht.readTemperature(true);
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f))
+  {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
   }
+
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+  snprintf (msg, MSG_BUFFER_SIZE, "%ld", hic);
+  client.publish("/curso/profe/temp", msg);
+  delay(2000);
 }
